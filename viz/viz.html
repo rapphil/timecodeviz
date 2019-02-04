@@ -3,8 +3,8 @@
 <head>
     <meta charset="utf-8">
     <title>Pack</title>
-    <link rel="stylesheet" type="text/css" href="../../css/styles.css"/>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.13.0/d3.js"></script>
+    <link rel="stylesheet" type="text/css" href="./css/styles.css"/>
+    <script type="text/javascript" src="./lib/d3.js"></script>
 
     <style type="text/css">
 
@@ -63,7 +63,7 @@ var pack = d3.pack()
     .size([diameter - margin, diameter - margin])
     .padding(10);
 
-d3.json("../../data/mine.json", function(error, root) {
+d3.json("./data/mine.json", function(error, root) {
   if (error) throw error;
 
   root = d3.hierarchy(root)
@@ -80,7 +80,7 @@ d3.json("../../data/mine.json", function(error, root) {
     .data(nodes)
     .enter().append("circle")
       .attr("class", function(d) { return d.parent ? d.children ? "node" : "node node--leaf" : "node node--root"; })
-      .style("fill", function(d) { console.log(d.data.age_color);return d.children ? color(d.depth) : analysis_color(d.data.age_color); })
+      .style("fill", function(d) { console.log(d.data.age_color);return d.children ? color(d.depth) : analysis_color(d.data.changes_color); })
       .on("click", function(d) { if (focus !== d) zoom(d), d3.event.stopPropagation(); });
 
   var text = g.selectAll("text")
