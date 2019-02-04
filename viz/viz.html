@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Pack</title>
+    <link rel="stylesheet" type="text/css" href="../../css/styles.css"/>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.13.0/d3.js"></script>
+
+    <style type="text/css">
+
+.node {
+  stroke: darkslategrey;
+  cursor: pointer;
+}
+
+.node:hover {
+   stroke: #000;
+  stroke-width: 0.5px;
+  opacity: 0.3;
+}
+
+.node--leaf {
+  fill: #fff;
+}
+
+.label {
+  font: 16px "Maison Neue", Helvetica, Arial, sans-serif;
+  text-anchor: middle;
+/*   text-shadow: 0 1px 0 #fff, 1px 0 0 #fff, -1px 0 0 #fff, 0 -1px 0 #fff; */
+}
+
+.label,
+.node--root,
+.node--leaf {
+  pointer-events: none;
+}
+
+    </style>
+</head>
+
+<body>
+<svg width="960" height="960"></svg>
+<script>
+
+var svg = d3.select("svg"),
+    margin = 20,
+    diameter = +svg.attr("width"),
+    g = svg.append("g").attr("transform", "translate(" + diameter / 2 + "," + diameter / 2 + ")");
+
+var color = d3.scaleLinear()
+    .domain([-1, 5])
+    .range(["hsl(183, 78%, 92%)", "hsl(183, 78%, 37%)"])
+    .interpolate(d3.interpolateHsl);
+
+
+var analysis_color = d3.scaleLinear()
+    .domain([0, 255])
+    .range(["hsl(5, 78%, 100%)", "hsl(5, 78%, 36%)"])
+    .interpolate(d3.interpolateHsl);
+
+
+var pack = d3.pack()
+    .size([diameter - margin, diameter - margin])
+    .padding(10);
+
+d3.json("../../data/mine.json", function(error, root) {
+  if (error) throw error;
+
+  root = d3.hierarchy(root)
+      .sum(function(d) { return d.size; })
+      .sort(function(a, b) { return b.value - a.value; });
+
+  var focus = root,
+      nodes = pack(root).descendants(),
+      view;
+
+  console.log(nodes);
+
+  var circle = g.selectAll("circle")
+    .data(nodes)
+    .enter().append("circle")
+      .attr("class", function(d) { return d.parent ? d.children ? "node" : "node node--leaf" : "node node--root"; })
+      .style("fill", function(d) { console.log(d.data.age_color);return d.children ? color(d.depth) : analysis_color(d.data.age_color); })
+      .on("click", function(d) { if (focus !== d) zoom(d), d3.event.stopPropagation(); });
+
+  var text = g.selectAll("text")
+    .data(nodes)
+    .enter().append("text")
+      .attr("class", "label")
+      .style("fill-opacity", function(d) { return d.parent === root ? 1 : 0; })
+      .style("display", function(d) { return d.parent === root ? "inline" : "none"; })
+      .text(function(d) { return d.data.name; });
+
+  var node = g.selectAll("circle,text");
+
+  svg
+      //.style("background", color(-1))
+      .on("click", function() { zoom(root); });
+
+  zoomTo([root.x, root.y, root.r * 2 + margin]);
+
+  function zoom(d) {
+    var focus0 = focus; focus = d;
+
+    var transition = d3.transition()
+        .duration(d3.event.altKey ? 7500 : 750)
+        .tween("zoom", function(d) {
+          var i = d3.interpolateZoom(view, [focus.x, focus.y, focus.r * 2 + margin]);
+          return function(t) { zoomTo(i(t)); };
+        });
+
+    transition.selectAll("text")
+      .filter(function(d) { return d.parent === focus || this.style.display === "inline"; })
+        .style("fill-opacity", function(d) { return d.parent === focus ? 1 : 0; })
+        .on("start", function(d) { if (d.parent === focus) this.style.display = "inline"; })
+        .on("end", function(d) { if (d.parent !== focus) this.style.display = "none"; });
+  }
+
+  function zoomTo(v) {
+    var k = diameter / v[2]; view = v;
+    node.attr("transform", function(d) { return "translate(" + (d.x - v[0]) * k + "," + (d.y - v[1]) * k + ")"; });
+    circle.attr("r", function(d) { return d.r * k; });
+  }
+});
+
+</script>
+
+<div class="control-group">
+    <button onclick="flare()">Render Flare</button>
+    <button onclick="flip(chart)">Flip Value vs. Count</button>
+</div>
+
+</body>
+
+</html>
