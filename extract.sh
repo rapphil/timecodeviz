@@ -7,7 +7,7 @@ function extract_sizes() {
     currdir=${PWD}
     cd $(dirname $dir_name)
     base=$(basename $dir_name)
-    find $base -type f -exec  wc -l '{}' \;  | awk -F' ' '{ print $2","$1}' | sed "s/^$base\///g; /\.py/!d" > $output_dir/sizes.log
+    find $base -type f -exec  wc -l '{}' \;  | awk -F' ' '{ print $2","$1}' | sed "s/^$base\///g" > $output_dir/sizes.log
     cd $currdir
 }
 
@@ -26,7 +26,7 @@ function extract_changes() {
     file=$(basename $log_file)
 
     path_to_mount=$(realpath $log_directory)
-    docker run -ti -v ${path_to_mount}:/data code-maat -l /data/${file} -a revisions -c git2 | sed '/\.py/!d' | tail -n +2 > ${output_dir}/changes.log
+    docker run -ti -v ${path_to_mount}:/data code-maat -l /data/${file} -a revisions -c git2 | tail -n +2 > ${output_dir}/changes.log
 }
 
 function extract_ages() {
@@ -37,7 +37,7 @@ function extract_ages() {
     file=$(basename $log_file)
 
     path_to_mount=$(realpath $log_directory)
-    docker run -ti -v ${path_to_mount}:/data code-maat -l /data/${file} -a age -c git2 | sed '/\.py/!d' | tail -n +2  > ${output_dir}/ages.log
+    docker run -ti -v ${path_to_mount}:/data code-maat -l /data/${file} -a age -c git2 | tail -n +2  > ${output_dir}/ages.log
 }
 
 
@@ -50,3 +50,4 @@ extract_sizes $input_repo_dir $output_dir
 extract_logs $input_repo_dir $output_dir
 extract_changes "$output_dir/scv.log" $output_dir
 extract_ages "$output_dir/scv.log" $output_dir
+python timecodeviz.py $output_dir > $output_dir/mine.json

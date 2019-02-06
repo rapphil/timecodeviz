@@ -32,6 +32,18 @@
 .label,
 .node--root,
 .node--leaf {
+}
+
+
+div.tooltip {	
+  position: absolute;
+  text-align: right;
+
+  padding: 2px;
+  font: 12px sans-serif;
+  background: lightsteelblue;
+  border: 0px;
+  border-radius: 8px;
   pointer-events: none;
 }
 
@@ -51,7 +63,8 @@
       _node,
       _root,
       _circle,
-      _colorAnalysis;
+      _colorAnalysis,
+      _div;
       var _width = 800, _height = 800;
     var diameter;
     var margin = 20;
@@ -73,6 +86,9 @@
           .attr("height", _height)
           .attr("width", _width);
           diameter = _width;
+      _div = d3.select("body").append("div")
+      .attr("class", "tooltip")
+      .style("opacity", 0);
       renderBody(_svg);
     };
 
@@ -98,22 +114,41 @@
       descendants = _root.descendants();
 
       renderCircles(descendants);
-      renderLabels(_root.descendants());
+      renderLabels(descendants);
       _node = _bodyG.selectAll("circle,text");
       _svg
-      //.style("background", color(-1))
       .on("click", function() { zoom(_root); });
 
       zoomTo([_root.x, _root.y, _root.r * 2 + margin]);
     }
-
+    function getTooltipText(d) {
+      return `File name: ${d.data.name}</br>` +
+             `# of Lines ${d.data.size} <br/>`  +
+             `Age: ${d.data.age}<br/>` +
+             `# of Changes: ${d.data.changes}`;
+    }
     function renderCircles(nodes) {
       _circle = _bodyG.selectAll("circle")
         .data(nodes)
         .enter().append("circle")
-          .attr("class", function(d) { return d.parent ? d.children ? "node" : "node node--leaf" : "node node--_root"; })
+          .attr("class", function(d) { return d.parent ? d.children ? "node" : "node node--leaf" : "node node--root"; })
           .style("fill", function(d) { return d.children ? color(d.depth) : analysis_color(_colorAnalysis(d)); })
-          .on("click", function(d) { if (_focus !== d) zoom(d), d3.event.stopPropagation(); });
+          .on("click", function(d) { if (_focus !== d) zoom(d), d3.event.stopPropagation(); })
+          .on("mouseover", function(d) {
+            if (!d.children) {
+              _div.transition()
+                  .duration(200)
+                  .style("opacity", .9);
+              _div	.html(getTooltipText(d) )
+                  .style("left", (d3.event.pageX) + "px")
+                  .style("top", (d3.event.pageY - 28) + "px");
+            }
+          })
+          .on("mouseout", function(d) {
+            _div.transition()
+                .duration(500)
+                .style("opacity", 0);
+          });
 
     }
 
@@ -122,8 +157,8 @@
       .data(nodes)
       .enter().append("text")
         .attr("class", "label")
-        .style("fill-opacity", function(d) { return d.parent === _root ? 1 : 0; })
-        .style("display", function(d) { return d.parent === _root ? "inline" : "none"; })
+        .style("fill-opacity", function(d) { return (d.parent === _root) ? 1 : 0; })
+        .style("display", function(d) { return (d.parent === _root)? "inline" : "none"; })
         .text(function(d) { return d.data.name; });
     }
 
